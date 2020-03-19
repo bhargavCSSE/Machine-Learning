@@ -46,6 +46,12 @@ class Perceptron(object):
         else:
             return -1.0
 
+    def featureSelect(self, x):
+        mask = list(self.x.columns.values)
+        x = x.loc[:, mask]
+        x = x.to_numpy()
+        return x
+
     def testingMetrics(self, x, printTest=False):
         if printTest is True:
             for i in range(0, np.size(x, 0)):
@@ -99,12 +105,6 @@ class Perceptron(object):
                 self.testingMetrics(x)
                 break
         return 0
-
-    def featureSelect(self, x):
-        mask = list(self.x.columns.values)
-        x = x.loc[:, mask]
-        x = x.to_numpy()
-        return x
 
     def test(self, filename):
         x, y = self.readfile(filename)
