@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from sklearn.utils import shuffle
-from sklearn.metrics import accuracy_score
 
 
 class LinearSVM(object):
@@ -42,6 +41,8 @@ class LinearSVM(object):
 
     def initialize(self, filename):
         x, y = self.readfile(filename)
+        self.x = x
+        self.y = y
         y = np.array(y)
         x = np.array(x)
         t = np.ones((np.size(x, 0), 1))
@@ -69,23 +70,28 @@ class LinearSVM(object):
                 print("Epoch is:{} and Cost is: {}".format(epoch, cost))
                 # stoppage criterion
                 if abs(prev_cost - cost) < cost_threshold * prev_cost:
-                    return self.weights
+                    break
                 prev_cost = cost
                 nth += 1
-        return self.weights
 
     def train(self, filename):
         x, y = self.initialize(filename)
         print("training started...")
-        W = self.sgd(x, y)
+        self.sgd(x, y)
         print("training finished.")
-        print("weights are: {}".format(W))
-        prediction = []
-        for i in range(len(y)):
-            y_pred = np.sign(np.dot(x, self.weights))
-            prediction.append(y_pred)
-        print("Training accuracy: " + str(accuracy_score(y, prediction)))
-        # self.PerformanceMatrix(x, y, prediction)
+        print("weights are: {}".format(self.weights))
+        y_pred = np.sign(np.dot(x, self.weights))
+        self.PerformanceMatrix(x, y, y_pred)
+
+    def test(self, filename):
+        x, y = self.readfile(filename)
+        x = self.featureSelect(x)
+        y = np.array(y)
+        x = np.array(x)
+        t = np.ones((np.size(x, 0), 1))
+        x = np.append(x, t, axis=1)
+        y_pred = np.sign(np.dot(x, self.weights))
+        self.PerformanceMatrix(x, y, y_pred)
 
     def readfile(self, filename):
         x = []
@@ -104,6 +110,12 @@ class LinearSVM(object):
             x = x + [temp_x]
         x = pd.DataFrame(x).fillna(-1)
         return x, y
+
+    def featureSelect(self, x):
+        mask = list(self.x.columns.values)
+        x = x.loc[:, mask]
+        x = x.to_numpy()
+        return x
 
     def PerformanceMatrix(self, X, y_actual, y_pred):
         tp = 0
@@ -130,5 +142,6 @@ class LinearSVM(object):
         print("F1:           ", f1)
 
 
-inference = LinearSVM(5000)
+inference = LinearSVM(50)
 inference.train('Dataset/a4a.txt')
+inference.test('Dataset/a4a_t.txt')
