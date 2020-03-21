@@ -57,18 +57,18 @@ class LinearSVM(object):
         nth = 0
         prev_cost = float("inf")
         cost_threshold = 0.01
-        # stochastic gradient descent
+
         for epoch in range(1, max_epochs):
-            # shuffle to prevent repeating update cycles
+
             X, Y = shuffle(features, outputs)
             for index, x in enumerate(X):
                 ascent = self.get_cost_gradient(self.weights, x, Y[index])
                 self.weights = self.weights - (self.learning_rate * ascent)
-            # convergence check on 2^nth epoch
+
             if epoch == 2 ** nth or epoch == max_epochs - 1:
                 cost = self.get_cost(self.weights, features, outputs)
                 print("Epoch is:{} and Cost is: {}".format(epoch, cost))
-                # stoppage criterion
+
                 if abs(prev_cost - cost) < cost_threshold * prev_cost:
                     break
                 prev_cost = cost
