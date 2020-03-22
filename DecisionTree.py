@@ -154,27 +154,27 @@ def featureSelect(X, x):
     x = x.loc[:, mask]
     return x
 
-# x, y = readfile('Dataset/a4a.txt')
-# x = pd.DataFrame(x).fillna(-1)
-# x = x.assign(label=y)
-# x = x.values.tolist()
+x, y = readfile('Dataset/iris.txt')
+x = pd.DataFrame(x).fillna(-1)
+x = x.assign(label=y)
+x = x.values.tolist()
 
-# training_data, testing_data, y_train, y_test = train_test_split(x, y, test_size=0.33, random_state=42)
+training_data, testing_data, y_train, y_test = train_test_split(x, y, test_size=0.33, random_state=42)
 
-train_data, y_train = readfile('Dataset/a4a.txt')
-train_data = pd.DataFrame(train_data).fillna(-1)
-train_data = train_data.assign(label=y_train)
-training_data = train_data.values.tolist()
+# train_data, y_train = readfile('Dataset/a4a.txt')
+# train_data = pd.DataFrame(train_data).fillna(-1)
+# train_data = train_data.assign(label=y_train)
+# training_data = train_data.values.tolist()
 
 print("Building the tree")
 my_tree = grow_tree(training_data)
 print("Done")
 
-testing_data, y_test = readfile('Dataset/a4a_t.txt')
-testing_data = pd.DataFrame(testing_data).fillna(-1)
-testing_data = featureSelect(train_data, testing_data)
-testing_data = testing_data.assign(label=y_test)
-testing_data = testing_data.values.tolist()
+# testing_data, y_test = readfile('Dataset/a4a_t.txt')
+# testing_data = pd.DataFrame(testing_data).fillna(-1)
+# testing_data = featureSelect(train_data, testing_data)
+# testing_data = testing_data.assign(label=y_test)
+# testing_data = testing_data.values.tolist()
 
 y_pred = []
 for row in testing_data:

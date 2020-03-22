@@ -9,8 +9,8 @@ class LinearSVM(object):
         self.y = np.array([])
         self.weights = np.array([])
         self.epochs = epochs
-        self.reg_strength = 10000
-        self.learning_rate = 0.000001
+        self.reg_strength = 10
+        self.learning_rate = 0.001
         self.lamda = 1
 
     def hingeloss(self, d, n):
@@ -57,18 +57,15 @@ class LinearSVM(object):
         nth = 0
         prev_cost = float("inf")
         cost_threshold = 0.01
-
         for epoch in range(1, max_epochs):
-
             X, Y = shuffle(features, outputs)
             for index, x in enumerate(X):
-                ascent = self.get_cost_gradient(self.weights, x, Y[index])
-                self.weights = self.weights - (self.learning_rate * ascent)
-
+                gradient = self.get_cost_gradient(self.weights, x, Y[index])
+                self.weights = self.weights - (self.learning_rate * gradient)
+           
             if epoch == 2 ** nth or epoch == max_epochs - 1:
                 cost = self.get_cost(self.weights, features, outputs)
-                print("Epoch is:{} and Cost is: {}".format(epoch, cost))
-
+                print("Iteration: " + str(epoch) + "\tcost: " + str(cost))
                 if abs(prev_cost - cost) < cost_threshold * prev_cost:
                     break
                 prev_cost = cost
@@ -78,8 +75,7 @@ class LinearSVM(object):
         x, y = self.initialize(filename)
         print("training started...")
         self.sgd(x, y)
-        print("training finished.")
-        print("weights are: {}".format(self.weights))
+        print("training finished\n")
         y_pred = np.sign(np.dot(x, self.weights))
         self.PerformanceMatrix(x, y, y_pred)
 
@@ -144,4 +140,5 @@ class LinearSVM(object):
 
 inference = LinearSVM(50)
 inference.train('Dataset/a4a.txt')
+print("\nTesting...")
 inference.test('Dataset/a4a_t.txt')
