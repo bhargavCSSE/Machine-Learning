@@ -64,7 +64,7 @@ class LinearSVM(object):
                 gradient = self.get_cost_gradient(self.weights, x, Y[index])
                 self.weights = self.weights - (self.learning_rate * gradient)
            
-            if epoch == 2 ** nth or epoch == max_epochs - 1:
+            if epoch == 2 ** pwr or epoch == max_epochs - 1:
                 cost = self.get_cost(self.weights, features, outputs)
                 print("Iteration: " + str(epoch) + "\tcost: " + str(cost))
                 if abs(prev_cost - cost) < cost_threshold * prev_cost:
