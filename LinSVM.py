@@ -54,9 +54,10 @@ class LinearSVM(object):
 
     def sgd(self, features, outputs):
         max_epochs = self.epochs
-        nth = 0
         prev_cost = float("inf")
         cost_threshold = 0.01
+        pwr = 0
+
         for epoch in range(1, max_epochs):
             X, Y = shuffle(features, outputs)
             for index, x in enumerate(X):
@@ -69,7 +70,7 @@ class LinearSVM(object):
                 if abs(prev_cost - cost) < cost_threshold * prev_cost:
                     break
                 prev_cost = cost
-                nth += 1
+                pwr += 1
 
     def train(self, filename):
         x, y = self.initialize(filename)
