@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
 
 
 class Perceptron(object):
@@ -11,26 +13,7 @@ class Perceptron(object):
         self.x = pd.DataFrame()
         self.y = np.array([])
 
-    def readfile(self, filename):
-        data = open(filename)
-        y = []
-        x = []
-        for index, line in enumerate(data):
-            line = line.split(None, 1)
-            if len(line) == 1:
-                line += ['']
-            label, features = line
-            y.append(float(label))
-            temp_x = {}
-            for elem in features.split(None):
-                name, value = elem.split(':')
-                temp_x[int(name)] = (float(value))
-            x = x + [temp_x]
-        x = pd.DataFrame(x).fillna(-1)
-        return x, y
-
-    def Initialize(self, filename):
-        x, y = self.readfile(filename)
+    def Initialize(self, x, y):
         self.x = x
         self.y = y
         x = np.array(x)
@@ -61,7 +44,7 @@ class Perceptron(object):
         accuracy = (total-self.mis)/total
         print("Training accuracy: " + str(accuracy))
 
-    def PerformanceMatrix(self, X, y_actual, y_pred):
+    def PerformanceMatrix(self, y_actual, y_pred):
         tp = 0
         tn = 0
         fp = 0
@@ -85,16 +68,19 @@ class Perceptron(object):
         print("Precision:    ", precision)
         print("F1:           ", f1)
 
-    def train(self, filename):
-        x, y = self.Initialize(filename)
+    def train(self, x, y):
+        x, y = self.Initialize(x, y)
         while(True):
+            x, y = shuffle(x, y)
             self.mis = 0
+            predictions = []
             for i in range(0, len(y)):
                 y_pred = self.predict(np.dot(x[i, :], np.transpose(self.w)))
                 if (y[i]*y_pred) <= 0:
                     self.w = self.w + y[i]*x[i, :]
                     self.mis += 1
             self.iter += 1
+            predictions.append(y_pred)
             if self.mis == 0:
                 print("Success")
                 print("Total iterations: " + str(self.iter))
@@ -102,12 +88,12 @@ class Perceptron(object):
                 break
             if self.iter > self.epochs:
                 print("Misclassifications: " + str(self.mis))
+                print("Total iterations: " + str(self.iter))
                 self.testingMetrics(x)
                 break
-        return 0
+        return predictions
 
-    def test(self, filename):
-        x, y = self.readfile(filename)
+    def test(self, x, y):
         x = self.featureSelect(x)
         t = np.ones((np.size(x, 0), 1))
         x = np.append(x, t, axis=1)
@@ -115,11 +101,89 @@ class Perceptron(object):
         for i in range(0, len(y)):
             y_pred = self.predict(np.dot(x[i, :], np.transpose(self.w)))
             predictions.append(y_pred)
-        print("Performance metrics:")
-        self.PerformanceMatrix(x, y, predictions)
+        self.PerformanceMatrix(y, predictions)
         return np.array(predictions)
 
 
-inference = Perceptron(epochs=1)
-inference.train('Dataset/a4a.txt')
-pred = inference.test('Dataset/a4a_t.txt')
+def readfile(filename):
+    x = []
+    y = []
+    data = open(filename)
+    for index, line in enumerate(data):
+        line = line.split(None, 1)
+        if len(line) == 1:
+            line += ['']
+        label, features = line
+        y.append(float(label))
+        temp_x = {}
+        for elem in features.split(None):
+            name, value = elem.split(':')
+            temp_x[int(name)] = (float(value))
+        x = x + [temp_x]
+    x = pd.DataFrame(x).fillna(-1)
+    return x, y
+
+
+def calculate_accuracy(y_test, y_pred):
+    mis = 0
+    for Y, Y_pred in zip(y_test, y_pred):
+        if(Y != Y_pred):
+            mis += 1
+    accuracy = (float(len(y_test)) - mis)/float(len(y_test))
+    print("\nFinal accuracy: " + str(accuracy))
+    print("Total misclassifications: " + str(mis) +
+          " (Out of " + str(len(y_test)) + ")")
+
+# Binary Classification
+
+# x, y = readfile('Dataset/a4a.txt')
+# inference = Perceptron(epochs=128)
+# y_pred_train = inference.train(x, y)
+# print("\nTesting...")
+# x_test, y_test = readfile('Dataset/a4a_t.txt')
+# t_pred_test = inference.test(x_test, y_test)
+
+
+# Multiclass Classification
+
+x, y = readfile('Dataset/iris.txt')
+x_train, x_test, y_train, y_test = train_test_split(
+    x, y,
+    test_size=0.75, random_state=42
+)
+
+y_train_1 = np.array(y_train)
+y_train_2 = np.array(y_train)
+y_test_1 = np.array(y_test)
+y_test_2 = np.array(y_test)
+
+y_train_1[y_train_1 >= 2.0] = -1.0
+y_train_2[y_train_2 != 3.0] = -1.0
+y_train_2[y_train_2 == 3.0] = 1.0
+
+y_test_1[y_test_1 >= 2.0] = -1.0
+y_test_2[y_test_2 != 3.0] = -1.0
+y_test_2[y_test_2 == 3.0] = 1.0
+
+classifier1 = Perceptron(epochs=128)
+classifier2 = Perceptron(epochs=128)
+print("\nTraining classifier 1")
+y_pred_train_1 = classifier1.train(x_train, y_train_1)
+print("\nTraining classifier 2")
+y_pred_train_2 = classifier2.train(x_train, y_train_2)
+print("\nTesting...")
+print("\nTesting classifier 1")
+y_pred_test_1 = classifier1.test(x_test, y_test_1)
+print("\nTesting classifier 2")
+y_pred_test_2 = classifier2.test(x_test, y_test_2)
+
+y_pred = []
+for clf1, clf2 in zip(y_pred_test_1, y_pred_test_2):
+    if (clf1 == 1):
+        y_pred.append(1.0)
+    elif (clf2 == 1):
+        y_pred.append(3.0)
+    else:
+        y_pred.append(2.0)
+
+calculate_accuracy(y_test, y_pred)

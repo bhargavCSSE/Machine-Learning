@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.utils import shuffle
+from sklearn.model_selection import train_test_split
 
 
 class LinearSVM(object):
@@ -20,27 +21,20 @@ class LinearSVM(object):
         n = x.shape[0]
         dist = 1 - y*(np.dot(x, w))
         dist[dist < 0] = 0
-        loss = self.hingeloss(dist, n)
-        cost = (self.lamda/2)*(np.dot(w, w)) + loss
+        cost = (self.lamda/2)*(np.dot(w, w)) + self.hingeloss(dist, n)
         return cost
 
     def get_cost_gradient(self, W, X_batch, Y_batch):
-        if type(Y_batch) == np.float64:
-            Y_batch = np.array([Y_batch])
-            X_batch = np.array([X_batch])
         dist = 1 - (Y_batch * np.dot(X_batch, W))
         dw = np.zeros(len(W))
-        for index, d in enumerate(dist):
-            if max(0, d) == 0:
-                di = W
-            else:
-                di = W - (self.reg_strength * Y_batch[index] * X_batch[index])
+        if max(0, dist) == 0:
+            di = W
+        else:
+            di = W - (self.reg_strength * Y_batch * X_batch)
             dw += di
-        dw = dw/len(Y_batch)
         return dw
 
-    def initialize(self, filename):
-        x, y = self.readfile(filename)
+    def initialize(self, x, y):
         self.x = x
         self.y = y
         y = np.array(y)
@@ -55,8 +49,7 @@ class LinearSVM(object):
     def sgd(self, features, outputs):
         max_epochs = self.epochs
         prev_cost = float("inf")
-        cost_threshold = 0.01
-        pwr = 0
+        cost_threshold = 0.001
 
         for epoch in range(1, max_epochs):
             X, Y = shuffle(features, outputs)
@@ -64,24 +57,23 @@ class LinearSVM(object):
                 gradient = self.get_cost_gradient(self.weights, x, Y[index])
                 self.weights = self.weights - (self.learning_rate * gradient)
            
-            if epoch == 2 ** pwr or epoch == max_epochs - 1:
+            if(epoch%3 == 0):           
                 cost = self.get_cost(self.weights, features, outputs)
                 print("Iteration: " + str(epoch) + "\tcost: " + str(cost))
                 if abs(prev_cost - cost) < cost_threshold * prev_cost:
                     break
                 prev_cost = cost
-                pwr += 1
 
-    def train(self, filename):
-        x, y = self.initialize(filename)
+    def train(self, x, y):
+        x, y = self.initialize(x, y)
         print("training started...")
         self.sgd(x, y)
         print("training finished\n")
         y_pred = np.sign(np.dot(x, self.weights))
         self.PerformanceMatrix(x, y, y_pred)
+        return y_pred
 
-    def test(self, filename):
-        x, y = self.readfile(filename)
+    def test(self, x, y):
         x = self.featureSelect(x)
         y = np.array(y)
         x = np.array(x)
@@ -89,24 +81,7 @@ class LinearSVM(object):
         x = np.append(x, t, axis=1)
         y_pred = np.sign(np.dot(x, self.weights))
         self.PerformanceMatrix(x, y, y_pred)
-
-    def readfile(self, filename):
-        x = []
-        y = []
-        data = open(filename)
-        for index, line in enumerate(data):
-            line = line.split(None, 1)
-            if len(line) == 1:
-                line += ['']
-            label, features = line
-            y.append(float(label))
-            temp_x = {}
-            for elem in features.split(None):
-                name, value = elem.split(':')
-                temp_x[int(name)] = (float(value))
-            x = x + [temp_x]
-        x = pd.DataFrame(x).fillna(-1)
-        return x, y
+        return y_pred
 
     def featureSelect(self, x):
         mask = list(self.x.columns.values)
@@ -139,7 +114,83 @@ class LinearSVM(object):
         print("F1:           ", f1)
 
 
-inference = LinearSVM(50)
-inference.train('Dataset/a4a.txt')
+def readfile(filename):
+    x = []
+    y = []
+    data = open(filename)
+    for index, line in enumerate(data):
+        line = line.split(None, 1)
+        if len(line) == 1:
+            line += ['']
+        label, features = line
+        y.append(float(label))
+        temp_x = {}
+        for elem in features.split(None):
+            name, value = elem.split(':')
+            temp_x[int(name)] = (float(value))
+        x = x + [temp_x]
+    x = pd.DataFrame(x).fillna(-1)
+    return x, y
+
+def calculate_accuracy(y_test, y_pred):
+    mis = 0
+    for Y, Y_pred in zip(y_test, y_pred):
+        if(Y != Y_pred):
+            mis += 1
+    accuracy = (float(len(y_test)) - mis)/float(len(y_test))
+    print("\nFinal accuracy: " + str(accuracy))
+    print("Total misclassifications: " + str(mis) +
+          " (Out of " + str(len(y_test)) + ")")
+
+# Binary Classification
+
+# x, y = readfile('Dataset/a4a.txt')
+# inference = LinearSVM(epochs=128)
+# y_pred_train = inference.train(x, y)
+# print("\nTesting...")
+# x_test, y_test = readfile('Dataset/a4a_t.txt')
+# t_pred_test = inference.test(x_test, y_test)
+
+# Multiclass Classification
+
+x, y = readfile('Dataset/iris.txt')
+x_train, x_test, y_train, y_test = train_test_split(
+    x, y,
+    test_size=0.75, random_state=42
+)
+
+y_train_1 = np.array(y_train)
+y_train_2 = np.array(y_train)
+y_test_1 = np.array(y_test)
+y_test_2 = np.array(y_test)
+
+y_train_1[y_train_1 >= 2.0] = -1.0
+y_train_2[y_train_2 != 3.0] = -1.0
+y_train_2[y_train_2 == 3.0] = 1.0
+
+y_test_1[y_test_1 >= 2.0] = -1.0
+y_test_2[y_test_2 != 3.0] = -1.0
+y_test_2[y_test_2 == 3.0] = 1.0
+
+classifier1 = LinearSVM(epochs=128)
+classifier2 = LinearSVM(epochs=128)
+print("\nTraining classifier 1")
+y_pred_train_1 = classifier1.train(x_train, y_train_1)
+print("\nTraining classifier 2")
+y_pred_train_2 = classifier2.train(x_train, y_train_2)
 print("\nTesting...")
-inference.test('Dataset/a4a_t.txt')
+print("\nTesting classifier 1")
+y_pred_test_1 = classifier1.test(x_test, y_test_1)
+print("\nTesting classifier 2")
+y_pred_test_2 = classifier2.test(x_test, y_test_2)
+
+y_pred = []
+for clf1, clf2 in zip(y_pred_test_1, y_pred_test_2):
+    if (clf1 == 1):
+        y_pred.append(1.0)
+    elif (clf2 == 1):
+        y_pred.append(3.0)
+    else:
+        y_pred.append(2.0)
+
+calculate_accuracy(y_test, y_pred)

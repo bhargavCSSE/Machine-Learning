@@ -33,7 +33,7 @@ def readfile(filename):
     x = []
     y = []
     data = open(filename)
-    for index, line in enumerate(data):
+    for i, line in enumerate(data):
         line = line.split(None, 1)
         if len(line) == 1:
             line += ['']
@@ -82,15 +82,15 @@ def infoGain(right, left, current_uncertainty):
 def find_best_split(rows):
     best_gain = 0
     best_question = None
-    current_uncertainty = entropy(rows)
-    n_features = len(rows[0]) - 1
+    total_entropy = entropy(rows)
+    features = len(rows[0]) - 1
 
-    for col in range(n_features):
+    for col in range(features):
         values = set([row[col] for row in rows])
         for elem in values:
             question = Question(col, elem)
             right, left = split_data(rows, question)
-            gain = infoGain(right, left, current_uncertainty)
+            gain = infoGain(right, left, total_entropy)
             if gain >= best_gain:
                 best_gain, best_question = gain, question
     
@@ -121,54 +121,24 @@ def output_leaf(counts):
     total = sum(counts.values()) * 1.0
     probs = {}
     for label in counts.keys():
-        probs[label] = str(int(counts[label] / total * 100)) + "%"
+        probs[label] = str(int(counts[label] / total)) 
     return probs
-
-
-def PerformanceMatrix(y_actual, y_pred):
-    tp = 0
-    tn = 0
-    fp = 0
-    fn = 0
-    for test_instance_result, label in zip(y_pred, y_actual):
-        if ((test_instance_result > 0.5) and (label > 0.5)):
-            tp += 1
-        if ((test_instance_result <= 0.5) and (label <= 0.5)):
-            tn += 1
-        if ((test_instance_result > 0.5) and (label <= 0.5)):
-            fp += 1
-        if ((test_instance_result <= 0.5) and (label > 0.5)):
-            fn += 1
-
-    accuracy = (tp + tn) / (tp + tn + fp + fn)
-    recall = tp / (tp + fn + 0.00001)
-    precision = tp / (tp + fp + 0.00001)
-    f1 = 2 * (precision * recall) / (precision + recall + 0.00001)
-    print("Accuracy:     ", accuracy)
-    print("Recall:       ", recall)
-    print("Precision:    ", precision)
-    print("F1:           ", f1)
 
 def featureSelect(X, x):
     mask = list(X.columns.values)
     x = x.loc[:, mask]
     return x
 
-x, y = readfile('Dataset/iris.txt')
-x = pd.DataFrame(x).fillna(-1)
-x = x.assign(label=y)
-x = x.values.tolist()
-
-training_data, testing_data, y_train, y_test = train_test_split(x, y, test_size=0.33, random_state=42)
+# Binary Classification
 
 # train_data, y_train = readfile('Dataset/a4a.txt')
 # train_data = pd.DataFrame(train_data).fillna(-1)
 # train_data = train_data.assign(label=y_train)
 # training_data = train_data.values.tolist()
 
-print("Building the tree")
-my_tree = grow_tree(training_data)
-print("Done")
+# print("Building the tree")
+# my_tree = grow_tree(training_data)
+# print("Done")
 
 # testing_data, y_test = readfile('Dataset/a4a_t.txt')
 # testing_data = pd.DataFrame(testing_data).fillna(-1)
@@ -176,10 +146,30 @@ print("Done")
 # testing_data = testing_data.assign(label=y_test)
 # testing_data = testing_data.values.tolist()
 
+# Multiclass Classification
+
+x, y = readfile('Dataset/iris.txt')
+x = pd.DataFrame(x).fillna(-1)
+x = x.assign(label=y)
+x = x.values.tolist()
+
+training_data, testing_data, y_train, y_test = train_test_split(x, y, test_size=0.75, random_state=42)
+
+print("Building the tree")
+my_tree = grow_tree(training_data)
+print("Done")
+
 y_pred = []
 for row in testing_data:
-    y = (output_leaf(predict(row, my_tree)))
-    for key, value in y.items():
+    Y = (output_leaf(predict(row, my_tree)))
+    for key, value in Y.items():
         y_pred.append(float(key))
 y_pred = np.array(y_pred)
-PerformanceMatrix(y_test, y_pred)
+
+mis = 0
+for Y, Y_pred in zip(y_test, y_pred):
+    if(Y != Y_pred):
+        mis += 1
+accuracy = (float(len(y_test)) - mis)/float(len(y_test))
+print("\nFinal accuracy: " + str(accuracy))
+print("Total misclassifications: " + str(mis))
