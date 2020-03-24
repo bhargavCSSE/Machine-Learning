@@ -2,8 +2,9 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
+from warnings import simplefilter
 
-
+simplefilter(action='ignore', category=FutureWarning)
 class Perceptron(object):
     def __init__(self, epochs):
         self.epochs = epochs
