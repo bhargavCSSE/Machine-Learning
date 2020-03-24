@@ -4,6 +4,9 @@ import math
 import operator
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_iris
+from warnings import simplefilter
+
+simplefilter(action='ignore', category=FutureWarning)
 
 class leaf:
     def __init__(self, data):
