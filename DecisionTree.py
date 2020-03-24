@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import math
+import operator
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_iris
 
@@ -21,13 +22,15 @@ class Question:
         self.column = column
         self.value = value
 
-    def match(self, example):
-        val = example[self.column]
+    def match(self, instance):
+        val = instance[self.column]
         if is_numeric(val):
             return val >= self.value
         else:
             return val == self.value
 
+
+featureGain = {}
 
 def readfile(filename):
     x = []
@@ -59,7 +62,8 @@ def is_numeric(value):
     return isinstance(value, int) or isinstance(value, float)
 
 def split_data(rows, question):
-    true_rows, false_rows = [], []
+    true_rows = []
+    false_rows = []
     for row in rows:
         if question.match(row):
             true_rows.append(row)
@@ -98,11 +102,12 @@ def find_best_split(rows):
 
 def grow_tree(rows):
     gain, question = find_best_split(rows)
+    featureGain.update({str(question.column): gain})
+
     if gain == 0:
         return leaf(rows)
 
     true_rows, false_rows = split_data(rows, question)
-
     true_branch = grow_tree(true_rows)
     false_branch = grow_tree(false_rows)
 
@@ -131,33 +136,33 @@ def featureSelect(X, x):
 
 # Binary Classification
 
-# train_data, y_train = readfile('Dataset/a4a.txt')
-# train_data = pd.DataFrame(train_data).fillna(-1)
-# train_data = train_data.assign(label=y_train)
-# training_data = train_data.values.tolist()
-
-# print("Building the tree")
-# my_tree = grow_tree(training_data)
-# print("Done")
-
-# testing_data, y_test = readfile('Dataset/a4a_t.txt')
-# testing_data = pd.DataFrame(testing_data).fillna(-1)
-# testing_data = featureSelect(train_data, testing_data)
-# testing_data = testing_data.assign(label=y_test)
-# testing_data = testing_data.values.tolist()
-
-# Multiclass Classification
-
-x, y = readfile('Dataset/iris.txt')
-x = pd.DataFrame(x).fillna(-1)
-x = x.assign(label=y)
-x = x.values.tolist()
-
-training_data, testing_data, y_train, y_test = train_test_split(x, y, test_size=0.75, random_state=42)
+train_data, y_train = readfile('Dataset/a4a.txt')
+train_data = pd.DataFrame(train_data).fillna(-1)
+train_data = train_data.assign(label=y_train)
+training_data = train_data.values.tolist()
 
 print("Building the tree")
 my_tree = grow_tree(training_data)
 print("Done")
+
+testing_data, y_test = readfile('Dataset/a4a_t.txt')
+testing_data = pd.DataFrame(testing_data).fillna(-1)
+testing_data = featureSelect(train_data, testing_data)
+testing_data = testing_data.assign(label=y_test)
+testing_data = testing_data.values.tolist()
+
+# Multiclass Classification
+
+# x, y = readfile('Dataset/iris.txt')
+# x = pd.DataFrame(x).fillna(-1)
+# x = x.assign(label=y)
+# x = x.values.tolist()
+
+# training_data, testing_data, y_train, y_test = train_test_split(x, y, test_size=0.33, random_state=42)
+
+# print("Building the tree")
+# my_tree = grow_tree(training_data)
+# print("Done")
 
 y_pred = []
 for row in testing_data:
@@ -173,3 +178,4 @@ for Y, Y_pred in zip(y_test, y_pred):
 accuracy = (float(len(y_test)) - mis)/float(len(y_test))
 print("\nFinal accuracy: " + str(accuracy))
 print("Total misclassifications: " + str(mis))
+featureGain = sorted(featureGain.items(), key=operator.itemgetter(1), reverse=True)
