@@ -139,33 +139,33 @@ def featureSelect(X, x):
 
 # Binary Classification
 
-train_data, y_train = readfile('Dataset/a4a.txt')
-train_data = pd.DataFrame(train_data).fillna(-1)
-train_data = train_data.assign(label=y_train)
-training_data = train_data.values.tolist()
-
-print("Building the tree")
-my_tree = grow_tree(training_data)
-print("Done")
-
-testing_data, y_test = readfile('Dataset/a4a_t.txt')
-testing_data = pd.DataFrame(testing_data).fillna(-1)
-testing_data = featureSelect(train_data, testing_data)
-testing_data = testing_data.assign(label=y_test)
-testing_data = testing_data.values.tolist()
-
-# Multiclass Classification
-
-# x, y = readfile('Dataset/iris.txt')
-# x = pd.DataFrame(x).fillna(-1)
-# x = x.assign(label=y)
-# x = x.values.tolist()
-
-# training_data, testing_data, y_train, y_test = train_test_split(x, y, test_size=0.33, random_state=42)
+# train_data, y_train = readfile('Dataset/a4a.txt')
+# train_data = pd.DataFrame(train_data).fillna(-1)
+# train_data = train_data.assign(label=y_train)
+# training_data = train_data.values.tolist()
 
 # print("Building the tree")
 # my_tree = grow_tree(training_data)
 # print("Done")
+
+# testing_data, y_test = readfile('Dataset/a4a_t.txt')
+# testing_data = pd.DataFrame(testing_data).fillna(-1)
+# testing_data = featureSelect(train_data, testing_data)
+# testing_data = testing_data.assign(label=y_test)
+# testing_data = testing_data.values.tolist()
+
+# Multiclass Classification
+
+x, y = readfile('Dataset/iris.txt')
+x = pd.DataFrame(x).fillna(-1)
+x = x.assign(label=y)
+x = x.values.tolist()
+
+training_data, testing_data, y_train, y_test = train_test_split(x, y, test_size=0.33, random_state=42)
+
+print("Building the tree")
+my_tree = grow_tree(training_data)
+print("Done")
 
 y_pred = []
 for row in testing_data:

@@ -81,7 +81,7 @@ class Perceptron(object):
                     self.w = self.w + y[i]*x[i, :]
                     self.mis += 1
             self.iter += 1
-            self.testingMetrics(x)
+            # self.testingMetrics(x)
             predictions.append(y_pred)
             if self.mis == 0:
                 print("\nSuccess")
@@ -139,55 +139,55 @@ def calculate_accuracy(y_test, y_pred):
 
 # Binary Classification
 
-x, y = readfile('Dataset/a4a.txt')
-inference = Perceptron(epochs=128)
-y_pred_train = inference.train(x, y)
-print("\nTesting...")
-x_test, y_test = readfile('Dataset/a4a_t.txt')
-y_pred_test = inference.test(x_test, y_test)
-calculate_accuracy(y_test, y_pred_test)
+# x, y = readfile('Dataset/a4a.txt')
+# inference = Perceptron(epochs=128)
+# y_pred_train = inference.train(x, y)
+# print("\nTesting...")
+# x_test, y_test = readfile('Dataset/a4a_t.txt')
+# y_pred_test = inference.test(x_test, y_test)
+# calculate_accuracy(y_test, y_pred_test)
 
 
 # Multiclass Classification
 
-# x, y = readfile('Dataset/iris.txt')
-# x_train, x_test, y_train, y_test = train_test_split(
-#     x, y,
-#     test_size=0.75, random_state=42
-# )
+x, y = readfile('Dataset/iris.txt')
+x_train, x_test, y_train, y_test = train_test_split(
+    x, y,
+    test_size=0.33, random_state=42
+)
 
-# y_train_1 = np.array(y_train)
-# y_train_2 = np.array(y_train)
-# y_test_1 = np.array(y_test)
-# y_test_2 = np.array(y_test)
+y_train_1 = np.array(y_train)
+y_train_2 = np.array(y_train)
+y_test_1 = np.array(y_test)
+y_test_2 = np.array(y_test)
 
-# y_train_1[y_train_1 >= 2.0] = -1.0
-# y_train_2[y_train_2 != 3.0] = -1.0
-# y_train_2[y_train_2 == 3.0] = 1.0
+y_train_1[y_train_1 >= 2.0] = -1.0
+y_train_2[y_train_2 != 3.0] = -1.0
+y_train_2[y_train_2 == 3.0] = 1.0
 
-# y_test_1[y_test_1 >= 2.0] = -1.0
-# y_test_2[y_test_2 != 3.0] = -1.0
-# y_test_2[y_test_2 == 3.0] = 1.0
+y_test_1[y_test_1 >= 2.0] = -1.0
+y_test_2[y_test_2 != 3.0] = -1.0
+y_test_2[y_test_2 == 3.0] = 1.0
 
-# classifier1 = Perceptron(epochs=128)
-# classifier2 = Perceptron(epochs=128)
-# print("\nTraining classifier 1")
-# y_pred_train_1 = classifier1.train(x_train, y_train_1)
-# print("\nTraining classifier 2")
-# y_pred_train_2 = classifier2.train(x_train, y_train_2)
-# print("\nTesting...")
-# print("\nTesting classifier 1")
-# y_pred_test_1 = classifier1.test(x_test, y_test_1)
-# print("\nTesting classifier 2")
-# y_pred_test_2 = classifier2.test(x_test, y_test_2)
+classifier1 = Perceptron(epochs=128)
+classifier2 = Perceptron(epochs=128)
+print("\nTraining classifier 1")
+y_pred_train_1 = classifier1.train(x_train, y_train_1)
+print("\nTraining classifier 2")
+y_pred_train_2 = classifier2.train(x_train, y_train_2)
+print("\nTesting...")
+print("\nTesting classifier 1")
+y_pred_test_1 = classifier1.test(x_test, y_test_1)
+print("\nTesting classifier 2")
+y_pred_test_2 = classifier2.test(x_test, y_test_2)
 
-# y_pred = []
-# for clf1, clf2 in zip(y_pred_test_1, y_pred_test_2):
-#     if (clf1 == 1):
-#         y_pred.append(1.0)
-#     elif (clf2 == 1):
-#         y_pred.append(3.0)
-#     else:
-#         y_pred.append(2.0)
+y_pred = []
+for clf1, clf2 in zip(y_pred_test_1, y_pred_test_2):
+    if (clf1 == 1):
+        y_pred.append(1.0)
+    elif (clf2 == 1):
+        y_pred.append(3.0)
+    else:
+        y_pred.append(2.0)
 
-# calculate_accuracy(y_test, y_pred)
+calculate_accuracy(y_test, y_pred)
