@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.datasets import load_iris
 
 
 class NeuralNetwork:
@@ -43,10 +44,9 @@ class NeuralNetwork:
         w_in = 2*np.random.random_sample((np.size(x, 1), iH_size)) - 1
         self.weights.append(w_in)
         for i in range(len(self.layers)-1):
-            w = 2 * \
-                np.random.random_sample((self.layers[i], self.layers[i+1])) - 1
+            w = 2*np.random.random_sample((self.layers[i], self.layers[i+1])) - 1
             self.weights.append(w)
-        w_out = 2*np.random.random_sample((fH_size, np.size(y, 1))) - 1
+        w_out = 2*np.random.random_sample((fH_size, np.size(y, 0))) - 1
         self.weights.append(w_out)
 
         #Generate Network
@@ -55,8 +55,7 @@ class NeuralNetwork:
             if(i == 0):
                 self.network.append(x)
             else:
-                self.network.append(self.nonlin(
-                np.dot(self.network[i-1], self.weights[i-1])))
+                self.network.append(self.nonlin(np.dot(self.network[i-1], self.weights[i-1])))
 
     def train(self, x, y, epochs):
         self.generateModel(x, y)
@@ -79,7 +78,7 @@ class NeuralNetwork:
             for layer_count in range(total_layers-1, 0, -1):
                 delta = output_error*self.nonlin(self.network[layer_count], deriv=True)
                 output_error = delta.dot(self.weights[layer_count-1].T)
-                self.weights[layer_count -1] += self.network[layer_count-1].T.dot(delta)
+                self.weights[layer_count-1] += self.network[layer_count-1].T.dot(delta)
 
     def test(self, x, step=False):
         total_layers = len(self.network)
@@ -98,5 +97,8 @@ class NeuralNetwork:
 
 nn = NeuralNetwork(layers=[3, 5])
 x, y = nn.readfile("data.txt")
-nn.train(x, y, 10000)
-y = nn.test(x)
+# dataset = load_iris()
+# x = dataset.data
+# y = dataset.target
+# nn.train(x, y, 10000)
+# y = nn.test(x[1])
