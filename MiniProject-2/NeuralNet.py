@@ -1,80 +1,102 @@
 import numpy as np
+import pandas as pd
 
 
-def nonlin(x, deriv=False):
-    if(deriv == True):
-        return (x*(1-x))
+class NeuralNetwork:
+    def __init__(self, layers=[10]):
+        self.weights = []
+        self.network = []
+        self.layers = layers
+        np.random.seed(1)
 
-    return 1/(1+np.exp(-x))
+    def readfile(self, filename):
+        data = open(filename)
+        x = []
+        y = []
+        for index, line in enumerate(data):
+            line = line.split(None)
+            temp_x = []  # i love you honeyboo
+            temp_y = []
+            for i in range(len(line)):
+                if(i == (len(line)-1)):
+                    temp_y.append(float(line[i]))
+                else:
+                    temp_x.append(float(line[i]))
+            y.append(temp_y)
+            x.append(temp_x)
+        return np.array(x), np.array(y)
 
+    def nonlin(self, x, deriv=False):
+        if(deriv == True):
+            return x*(1-x)
 
-def step(x, deriv=False):
-	if(deriv == True):
-	x[x < 0] = 0
-	return x
-	x[x < 0.5] = 0
-	x[x >= 0.5] = 1
-	return x
+        return 1/(1+np.exp(-x))
 
+    def step(self, x):
+        x[x >= 0.5] = int(1)
+        x[x < 0.5] = int(0)
+        return x
 
-x = np.array([
-             [0, 0, 0, 0, 1],
-             [0, 0, 0, 1, 1],
-             [0, 0, 1, 0, 1],
-             [0, 0, 1, 1, 1],
-             [0, 1, 0, 0, 1],
-             [0, 1, 0, 1, 1],
-             [0, 1, 1, 0, 1],
-             [0, 1, 1, 1, 1],
-             [1, 0, 0, 0, 1],
-             [1, 0, 0, 1, 1],
-             [1, 0, 1, 0, 1],
-             [1, 0, 1, 1, 1],
-             [1, 1, 0, 0, 1],
-             [1, 1, 0, 1, 1],
-             [1, 1, 1, 0, 1],
-             [1, 1, 1, 1, 1]])
+    def generateModel(self, x, y):
+        iH_size = self.layers[0]
+        fH_size = self.layers[len(self.layers)-1]
+        w_in = 2*np.random.random_sample((np.size(x, 1), iH_size)) - 1
+        self.weights.append(w_in)
+        for i in range(len(self.layers)-1):
+            w = 2 * \
+                np.random.random_sample((self.layers[i], self.layers[i+1])) - 1
+            self.weights.append(w)
+        w_out = 2*np.random.random_sample((fH_size, np.size(y, 1))) - 1
+        self.weights.append(w_out)
 
-y = np.array([[0], [1], [1], [1], [1], [0], [0], [0],
-              [0], [1], [1], [1], [0], [0], [0], [0]])
+        #Generate Network
+        total_layers = len(self.layers) + 2
+        for i in range(total_layers):
+            if(i == 0):
+                self.network.append(x)
+            else:
+                self.network.append(self.nonlin(
+                np.dot(self.network[i-1], self.weights[i-1])))
 
+    def train(self, x, y, epochs):
+        self.generateModel(x, y)
+        total_layers = len(self.network)
 
-#seed
+        for i in range(epochs):
 
-np.random.seed(1)
+            #Update network
+            for i in range(total_layers):
+                if(i == 0):
+                    self.network[0] = x
+                else:
+                    self.network[i] = self.nonlin(np.dot(self.network[i-1], self.weights[i-1]))
 
-#synapses
+            #Backpropagation
+            output_error = y - self.network[total_layers-1]
+            if(epochs % 1000 == 0):
+                 print("Training error: {}".format(np.mean(np.abs(output_error))))
 
-syn0 = 2*np.random.random((5, 3)) - 1
-syn1 = 2*np.random.random((3, 1)) - 1
+            for layer_count in range(total_layers-1, 0, -1):
+                delta = output_error*self.nonlin(self.network[layer_count], deriv=True)
+                output_error = delta.dot(self.weights[layer_count-1].T)
+                self.weights[layer_count -1] += self.network[layer_count-1].T.dot(delta)
 
-#traning
+    def test(self, x, step=False):
+        total_layers = len(self.network)
+        for i in range(total_layers):
+            if(i == 0):
+                self.network[0] = x
+            else:
+                self.network[i] = self.nonlin(
+                np.dot(self.network[i-1], self.weights[i-1]))
 
-for j in range(60000):
+        output = self.network[total_layers-1]
+        if(step == True):
+            output = self.step(output)
+        print(output)
+        return output
 
-	#layers
-	l0 = x
-	l1 = nonlin(np.dot(l0, syn0))
-	l2 = nonlin(np.dot(l1, syn1))
-
-	#backpropagation
-	l2_error = y - l2
-	if (j % 1000) == 0:
-            print('Error at iter ' + str(j) + ':' +
-                  str(np.mean(np.abs(l2_error))))
-
-	l2_delta = l2_error * nonlin(l2, deriv=True)
-	l1_error = l2_delta.dot(syn1.T)
-	l1_delta = l1_error * nonlin(l1, deriv=True)
-
-	#update our synapses
-	syn1 += l1.T.dot(l2_delta)
-	syn0 += l0.T.dot(l1_delta)
-
-print('Output after training')
-l0 = x
-l1 = step(np.dot(l0, syn0))
-l2 = step(np.dot(l1, syn1))
-print(syn0)
-print(syn1)
-print(l2)
+nn = NeuralNetwork(layers=[3, 5])
+x, y = nn.readfile("data.txt")
+nn.train(x, y, 10000)
+y = nn.test(x)
