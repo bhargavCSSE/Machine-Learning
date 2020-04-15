@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
-from sklearn.datasets import load_iris
+from sklearn.datasets import load_iris, load_digits
+from bokeh.io import output_notebook
+from bokeh.plotting import figure, show
+from bokeh.models import ColumnDataSource, HoverTool
 
 
 class NeuralNetwork:
@@ -8,26 +11,13 @@ class NeuralNetwork:
         self.weights = []
         self.network = []
         self.layers = layers
-        np.random.seed(1)
+        self.learning_rate = 10e-4
+        np.random.seed(42)
 
-    def readfile(self, filename):
-        data = open(filename)
-        x = []
-        y = []
-        for index, line in enumerate(data):
-            line = line.split(None)
-            temp_x = []  # i love you honeyboo
-            temp_y = []
-            for i in range(len(line)):
-                if(i == (len(line)-1)):
-                    temp_y.append(float(line[i]))
-                else:
-                    temp_x.append(float(line[i]))
-            y.append(temp_y)
-            x.append(temp_x)
-        return np.array(x), np.array(y)
+        # Performance parameters
+        self.err = []
 
-    def nonlin(self, x, deriv=False):
+    def sigmoid(self, x, deriv=False):
         if(deriv == True):
             return x*(1-x)
 
@@ -38,67 +28,96 @@ class NeuralNetwork:
         x[x < 0.5] = int(0)
         return x
 
+    def softmax(self, x):
+        val = np.exp(x)
+        return val/val.sum(axis=1, keepdims=True)
+
     def generateModel(self, x, y):
         iH_size = self.layers[0]
         fH_size = self.layers[len(self.layers)-1]
-        w_in = 2*np.random.random_sample((np.size(x, 1), iH_size)) - 1
+
+        w_in = 2*np.random.random_sample((np.size(x, 1) + 1, iH_size)) - 1
         self.weights.append(w_in)
+
         for i in range(len(self.layers)-1):
-            w = 2*np.random.random_sample((self.layers[i], self.layers[i+1])) - 1
+            w = 2 * \
+                np.random.random_sample(
+                    (self.layers[i] + 1, self.layers[i+1])) - 1
             self.weights.append(w)
-        w_out = 2*np.random.random_sample((fH_size, np.size(y, 0))) - 1
+
+        w_out = 2*np.random.random_sample((fH_size + 1, np.size(y, 1))) - 1
         self.weights.append(w_out)
 
         #Generate Network
         total_layers = len(self.layers) + 2
         for i in range(total_layers):
             if(i == 0):
-                self.network.append(x)
+                self.network.append(np.hstack((np.ones((x.shape[0], 1)), x)))
+            elif(i != total_layers-1):
+                self.network.append(np.hstack((np.ones(
+                    (self.network[i-1].shape[0], 1)), self.sigmoid(np.dot(self.network[i-1], self.weights[i-1])))))
             else:
-                self.network.append(self.nonlin(np.dot(self.network[i-1], self.weights[i-1])))
+                self.network.append(self.softmax(
+                    np.dot(self.network[i-1], self.weights[i-1])))
 
-    def train(self, x, y, epochs):
+    def train(self, x, y, epochs, print_error=True):
         self.generateModel(x, y)
         total_layers = len(self.network)
 
         for i in range(epochs):
 
-            #Update network
+            #Feed Forward
             for i in range(total_layers):
                 if(i == 0):
-                    self.network[0] = x
+                    self.network[0] = np.hstack((np.ones((x.shape[0], 1)), x))
+                elif(i != total_layers-1):
+                    self.network[i] = np.hstack((np.ones(
+                        (self.network[i-1].shape[0], 1)), self.sigmoid(np.dot(self.network[i-1], self.weights[i-1]))))
                 else:
-                    self.network[i] = self.nonlin(np.dot(self.network[i-1], self.weights[i-1]))
+                    self.network[i] = self.softmax(
+                        np.dot(self.network[i-1], self.weights[i-1]))
 
+            dw = []
             #Backpropagation
             output_error = y - self.network[total_layers-1]
-            if(epochs % 1000 == 0):
-                 print("Training error: {}".format(np.mean(np.abs(output_error))))
+            # print(output_error)
+            if(epochs % 1 == 0) and (print_error):
+                self.err.append(-np.sum(y *
+                                        np.log(self.network[total_layers-1])))
 
             for layer_count in range(total_layers-1, 0, -1):
-                delta = output_error*self.nonlin(self.network[layer_count], deriv=True)
-                output_error = delta.dot(self.weights[layer_count-1].T)
-                self.weights[layer_count-1] += self.network[layer_count-1].T.dot(delta)
+                if(layer_count == total_layers-1):
+                    delta = output_error * \
+                        self.sigmoid(self.network[layer_count])
+                    output_error = delta.dot(self.weights[layer_count-1].T)
+                    dw.append(self.learning_rate *
+                              self.network[layer_count-1].T.dot(delta))
+                else:
+                    delta = output_error[:, 1:]*self.sigmoid(
+                        self.network[layer_count][:, 1:], deriv=True)
+                    output_error = delta.dot(self.weights[layer_count-1].T)
+                    dw.append(self.learning_rate *
+                              self.network[layer_count-1].T.dot(delta))
+
+            # Update weights
+            for layer_count in range(total_layers-1, 0, -1):
+                self.weights[layer_count-1] += dw[total_layers-1 - layer_count]
+
+        print("Training finished")
 
     def test(self, x, step=False):
         total_layers = len(self.network)
         for i in range(total_layers):
             if(i == 0):
-                self.network[0] = x
+                self.network[0] = np.hstack((np.ones((x.shape[0], 1)), x))
+            elif(i != total_layers-1):
+                self.network[i] = np.hstack((np.ones(
+                    (self.network[i-1].shape[0], 1)), self.sigmoid(np.dot(self.network[i-1], self.weights[i-1]))))
             else:
-                self.network[i] = self.nonlin(
-                np.dot(self.network[i-1], self.weights[i-1]))
+                self.network[i] = self.softmax(
+                    np.dot(self.network[i-1], self.weights[i-1]))
 
         output = self.network[total_layers-1]
         if(step == True):
             output = self.step(output)
-        print(output)
         return output
-
-nn = NeuralNetwork(layers=[3, 5])
-x, y = nn.readfile("data.txt")
-# dataset = load_iris()
-# x = dataset.data
-# y = dataset.target
-# nn.train(x, y, 10000)
-# y = nn.test(x[1])
