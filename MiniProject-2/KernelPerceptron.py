@@ -1,6 +1,14 @@
 import numpy as np
 
 
+def calculate_accuracy(y_pred, y_true):
+    mis = 0
+    for pred, true in zip(y_pred, y_true):
+        if pred != true:
+            mis += 1
+    return (len(y_pred) - mis)/len(y_pred)
+
+
 class kernel_perceptron(object):
     def __init__(self, T=1):
         self.T = T
@@ -39,7 +47,7 @@ class kernel_perceptron(object):
         accuracy = (tp + tn) / (tp + tn + fp + fn)
         recall = tp / (tp + fn + 1e-5)
         precision = tp / (tp + fp + 1e-5)
-        f1 = 2 * (precision * recall) / (precision + recall)
+        f1 = 2 * (precision * recall) / (precision + recall + 1e-5)
 
         return accuracy, recall, precision, f1
 
