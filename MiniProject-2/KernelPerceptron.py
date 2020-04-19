@@ -1,4 +1,9 @@
 import numpy as np
+from numba import jit, cuda
+
+
+import numpy as np
+from numba import jit, cuda
 
 
 def calculate_accuracy(y_pred, y_true):
@@ -12,6 +17,8 @@ def calculate_accuracy(y_pred, y_true):
 class kernel_perceptron(object):
     def __init__(self, T=1):
         self.T = T
+        self.x = []
+        self.y = []
 
     def kernel(self, x1, x2):
         return (1 + np.dot(x1, x2))**2
@@ -66,11 +73,11 @@ class kernel_perceptron(object):
             mis = 0
             for i in range(n):
                 # Predict
-                y_hat.append(self.sign(np.sum(K[i, :]*self.alpha)))
+                y_hat.append(self.sign(np.sum(K[:, i]*self.alpha*y)))
 
                 # Update alpha
-                if y_hat[i] != y[i]:
-                    self.alpha[i] += y[i]
+                if y_hat[i] * y[i] < 0:
+                    self.alpha[i] += 1
                     mis += 1
 
             self.mis.append(mis)
@@ -79,20 +86,17 @@ class kernel_perceptron(object):
                 break
 
         self.itr = epoch
+        sv = self.alpha > 0
+        self.alpha = self.alpha[sv]
+        self.x = x[sv]
+        self.y = y[sv]
         return self.confusion_matrix(y, y_hat)
 
     def test(self, x):
-        n, D = x.shape
-        y_hat = []
-
-        # Kernel Matrix
-        K = np.zeros((n, n))
-        for i in range(n):
-            for j in range(n):
-                K[i, j] = self.kernel(x[i], x[j])
-
-        for i in range(n):
-            # Predict
-            y_hat.append(self.sign(np.sum(K[i, :]*self.alpha)))
-
-        return y_hat
+        y_predict = []
+        for i in range(x.shape[0]):
+            hz = 0
+            for a, y, X in zip(self.alpha, self.y, self.x):
+                hz += a * y * self.kernel(x[i], X)
+            y_predict.append(hz)
+        return np.sign(y_predict)

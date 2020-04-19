@@ -184,5 +184,3 @@ class NeuralNetwork:
 
         test_err = -np.sum(y * np.log(self.network[total_layers-1]))
         return test_err
-
-        
