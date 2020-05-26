@@ -31,6 +31,7 @@ class LinearSVM(object):
         dw = np.zeros(len(W))
         if max(0, dist) == 0:
             di = W
+            dw += di
         else:
             di = W - (self.reg_strength * Y_batch * X_batch)
             dw += di
